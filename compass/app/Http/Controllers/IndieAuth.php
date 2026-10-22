@@ -94,9 +94,20 @@ class IndieAuth extends BaseController
       $request->session()->flush();
       $request->session()->put(['me' => $token['me']]);
       $this->_userLoggedIn($request, $token['me']);
+      return redirect('/');
     }
 
-    return redirect('/');
+    \Log::warning('IndieAuth code exchange failed', [
+      'endpoint' => $authorizationEndpoint,
+      'redirect_uri' => $this->_redirectURI(),
+      'client_id' => env('BASE_URL'),
+      'response_code' => $result['response_code'] ?? null,
+      'raw_response' => $result['raw_response'] ?? null,
+    ]);
+
+    return view('auth/error', ['error' => 'The authorization endpoint did not confirm your identity (HTTP '
+      . ($result['response_code'] ?? '?') . '): '
+      . substr((string)($result['raw_response'] ?? ''), 0, 500)]);
   }
 
   public function github(Request $request) {
