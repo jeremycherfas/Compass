@@ -78,11 +78,10 @@ class IndieAuth extends BaseController
       return view('auth/error', ['error' => 'State did not match. Start over.']);
     }
 
-    if($request->session()->has('authorization_endpoint')) {
-      $authorizationEndpoint = $request->session()->get('authorization_endpoint');
-    } else {
-      $authorizationEndpoint = env('DEFAULT_AUTH_ENDPOINT');
-    }
+    // Discovery stores false when the user's site names no endpoint,
+    // so test the value, not only that the key exists.
+    $authorizationEndpoint = $request->session()->get('authorization_endpoint')
+      ?: env('DEFAULT_AUTH_ENDPOINT');
     $result = \IndieAuth\Client::exchangeAuthorizationCode($authorizationEndpoint, [
       'code' => $request->input('code'),
       'redirect_uri' => $this->_redirectURI(),
