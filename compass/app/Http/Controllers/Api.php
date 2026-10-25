@@ -294,8 +294,11 @@ class Api extends BaseController
                   $this->dispatch($job);
                   $trips++;
                   Log::info('Got a trip record');
-                } catch(Exception $e) {
-                  Log::warning('Received invalid trip');
+                } catch(\Throwable $e) {
+                  // A failed trip job must not stop the location upload.
+                  // Without this, Overland gets a 500 and sends the same batch again and again.
+                  Log::warning('Trip job failed: '.get_class($e).': '.$e->getMessage()
+                    .' at '.$e->getFile().':'.$e->getLine());
                 }
               }
 
@@ -354,8 +357,12 @@ class Api extends BaseController
 
       // Notify subscribers that new data is available
       if($db->ping_urls) {
-        $job = (new NotifyOfNewLocations($db->id))->onQueue('compass');
-        $this->dispatch($job);
+        try {
+          $job = (new NotifyOfNewLocations($db->id))->onQueue('compass');
+          $this->dispatch($job);
+        } catch(\Throwable $e) {
+          Log::warning('NotifyOfNewLocations job failed: '.$e->getMessage());
+        }
       }
     }
 
@@ -368,8 +375,12 @@ class Api extends BaseController
         ]);
 
       if(!$existing_trip && $db->ping_urls) {
-        $job = (new TripStarted($db->id))->onQueue('compass');
-        $this->dispatch($job);
+        try {
+          $job = (new TripStarted($db->id))->onQueue('compass');
+          $this->dispatch($job);
+        } catch(\Throwable $e) {
+          Log::warning('TripStarted job failed: '.$e->getMessage());
+        }
       }
     } else {
       DB::table('databases')->where('id', $db->id)->update(['current_trip' => null]);
@@ -407,7 +418,7 @@ class Api extends BaseController
       $job = (new TripComplete($db->id, $loc))->onQueue('compass');
       $this->dispatch($job);
       Log::info('Got a manual trip record: '.$start->format('c').' '.$end->format('c'));
-    } catch(Exception $e) {
+    } catch(\Throwable $e) {
       Log::warning('Received invalid trip');
     }
 
