@@ -208,6 +208,16 @@ class Controller extends BaseController
 
     public function micropubStart(Request $request, $dbName) {
 
+        // Only the person that created the database can change its Micropub settings
+        if(!$request->session()->has('user_id'))
+            return redirect('/');
+        $owned = DB::table('databases')
+            ->where('created_by','=',$request->session()->get('user_id'))
+            ->where('name','=',$dbName)
+            ->first();
+        if(!$owned)
+            return redirect('/');
+
         $me = \IndieAuth\Client::normalizeMeURL($request->input('me'));
         if(!$me) {
             return view('auth/error', ['error' => 'Invalid URL']);
@@ -241,6 +251,16 @@ class Controller extends BaseController
     }
 
     public function micropubCallback(Request $request, $dbName) {
+
+        // Only the person that created the database can change its Micropub settings
+        if(!$request->session()->has('user_id'))
+            return redirect('/');
+        $owned = DB::table('databases')
+            ->where('created_by','=',$request->session()->get('user_id'))
+            ->where('name','=',$dbName)
+            ->first();
+        if(!$owned)
+            return redirect('/');
 
         $settingsSession = $request->session()->get($dbName);
 
@@ -310,6 +330,16 @@ class Controller extends BaseController
     }
 
     public function removeMicropub(Request $request, $dbName) {
+
+        // Only the person that created the database can change its Micropub settings
+        if(!$request->session()->has('user_id'))
+            return redirect('/');
+        $owned = DB::table('databases')
+            ->where('created_by','=',$request->session()->get('user_id'))
+            ->where('name','=',$dbName)
+            ->first();
+        if(!$owned)
+            return redirect('/');
 
         $db = DB::table('databases')
             ->where('name','=',$dbName)

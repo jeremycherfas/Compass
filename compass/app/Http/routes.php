@@ -14,9 +14,9 @@ $router->get('/auth/logout', 'IndieAuth@logout');
 $router->get('/map/{name:[A-Za-z0-9]+}', 'Controller@map');
 $router->get('/settings/{name:[A-Za-z0-9]+}', 'Controller@settings');
 $router->post('/settings/{name:[A-Za-z0-9]+}', 'Controller@updateSettings');
-$router->post('/settings/{name:[A-Za-z0-9]+}/auth/start', 'Controller@micropubStart');
-$router->get('/settings/{name:[A-Za-z0-9]+}/auth/callback', 'Controller@micropubCallback');
-$router->get('/settings/{name:[A-Za-z0-9]+}/auth/remove', 'Controller@removeMicropub');
+$router->post('/settings/{dbName:[A-Za-z0-9]+}/auth/start', 'Controller@micropubStart');
+$router->get('/settings/{dbName:[A-Za-z0-9]+}/auth/callback', 'Controller@micropubCallback');
+$router->get('/settings/{dbName:[A-Za-z0-9]+}/auth/remove', 'Controller@removeMicropub');
 $router->post('/database/create', 'Controller@createDatabase');
 
 $router->get('/api/query', 'Api@query');
