@@ -78,11 +78,10 @@ class IndieAuth extends BaseController
       return view('auth/error', ['error' => 'State did not match. Start over.']);
     }
 
-    if($request->session()->has('authorization_endpoint')) {
-      $authorizationEndpoint = $request->session()->get('authorization_endpoint');
-    } else {
-      $authorizationEndpoint = env('DEFAULT_AUTH_ENDPOINT');
-    }
+    // Discovery stores false when the user's site names no endpoint,
+    // so test the value, not only that the key exists.
+    $authorizationEndpoint = $request->session()->get('authorization_endpoint')
+      ?: env('DEFAULT_AUTH_ENDPOINT');
     $result = \IndieAuth\Client::exchangeAuthorizationCode($authorizationEndpoint, [
       'code' => $request->input('code'),
       'redirect_uri' => $this->_redirectURI(),
@@ -94,9 +93,20 @@ class IndieAuth extends BaseController
       $request->session()->flush();
       $request->session()->put(['me' => $token['me']]);
       $this->_userLoggedIn($request, $token['me']);
+      return redirect('/');
     }
 
-    return redirect('/');
+    \Log::warning('IndieAuth code exchange failed', [
+      'endpoint' => $authorizationEndpoint,
+      'redirect_uri' => $this->_redirectURI(),
+      'client_id' => env('BASE_URL'),
+      'response_code' => $result['response_code'] ?? null,
+      'raw_response' => $result['raw_response'] ?? null,
+    ]);
+
+    return view('auth/error', ['error' => 'The authorization endpoint did not confirm your identity (HTTP '
+      . ($result['response_code'] ?? '?') . '): '
+      . substr((string)($result['raw_response'] ?? ''), 0, 500)]);
   }
 
   public function github(Request $request) {
