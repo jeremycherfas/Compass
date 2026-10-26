@@ -115,16 +115,16 @@ class TripComplete extends Job implements ShouldQueue
 
     // If there are no start/end coordinates in the request, use the first and last coordinates
     if(count($features)) {
-      if(!array_key_exists('start_location', $this->_data['properties'])) {
+      if(empty($this->_data['properties']['start_location']['geometry']['coordinates'])) {
         $this->_data['properties']['start_location'] = json_decode(json_encode($features[0]), true);
       }
-      if(!array_key_exists('end_location', $this->_data['properties'])) {
+      if(empty($this->_data['properties']['end_location']['geometry']['coordinates'])) {
         $this->_data['properties']['end_location'] = json_decode(json_encode($features[count($features)-1]), true);
       }
     }
 
     $startAdr = false;
-    if(array_key_exists('start_location', $this->_data['properties'])) {
+    if(!empty($this->_data['properties']['start_location']['geometry']['coordinates'])) {
       // Reverse geocode the start and end location to get an h-adr
       $startAdr = [
         'type' => 'h-adr',
@@ -137,16 +137,16 @@ class TripComplete extends Job implements ShouldQueue
       $start = self::geocode($startAdr['properties']['latitude'], $startAdr['properties']['longitude']);
       if($start && property_exists($start, 'locality')) {
         $startAdr['properties']['locality'] = $start->locality;
-        $startAdr['properties']['region'] = $start->region;
-        $startAdr['properties']['country'] = $start->country;
-        Log::info('Found start: '.$start->full_name.' '.$start->timezone);
+        $startAdr['properties']['region'] = $start->region ?? null;
+        $startAdr['properties']['country'] = $start->country ?? null;
+        Log::info('Found start: '.($start->full_name ?? '').' '.($start->timezone ?? ''));
       }
     } else {
       $start = false;
     }
 
     $endAdr = false;
-    if(array_key_exists('end_location', $this->_data['properties'])) {
+    if(!empty($this->_data['properties']['end_location']['geometry']['coordinates'])) {
       $endAdr = [
         'type' => 'h-adr',
         'properties' => [
@@ -158,9 +158,9 @@ class TripComplete extends Job implements ShouldQueue
       $end = self::geocode($endAdr['properties']['latitude'], $endAdr['properties']['longitude']);
       if($end && property_exists($end, 'locality')) {
         $endAdr['properties']['locality'] = $end->locality;
-        $endAdr['properties']['region'] = $end->region;
-        $endAdr['properties']['country'] = $end->country;
-        Log::info('Found end: '.$end->full_name.' '.$end->timezone);
+        $endAdr['properties']['region'] = $end->region ?? null;
+        $endAdr['properties']['country'] = $end->country ?? null;
+        Log::info('Found end: '.($end->full_name ?? '').' '.($end->timezone ?? ''));
       }
     } else {
       $end = false;
@@ -168,12 +168,12 @@ class TripComplete extends Job implements ShouldQueue
 
     // Set the timezone of the dates based on the location
     $startDate = new DateTime($this->_data['properties']['start']);
-    if($start && $start->timezone) {
+    if($start && !empty($start->timezone)) {
       $startDate->setTimeZone(new DateTimeZone($start->timezone));
     }
 
     $endDate = new DateTime($this->_data['properties']['end']);
-    if($end && $end->timezone) {
+    if($end && !empty($end->timezone)) {
       $endDate->setTimeZone(new DateTimeZone($end->timezone));
     }
 
